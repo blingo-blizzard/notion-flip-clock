@@ -16,13 +16,15 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #4F1F1B;
             font-family: 'Arial', sans-serif;
         }
 
         .clock-container {
             perspective: 1000px;
             padding: 40px;
+            background-color: rgb(25, 25, 25);
+            border-radius: 12px;
         }
 
         .clock {
@@ -93,17 +95,7 @@
             font-size: 48px;
             font-weight: bold;
             color: white;
-            animation: blink 1s infinite;
             height: 20px;
-        }
-
-        @keyframes blink {
-            0%, 49%, 100% {
-                opacity: 1;
-            }
-            50%, 99% {
-                opacity: 0.3;
-            }
         }
 
         .period {
@@ -114,17 +106,6 @@
             display: flex;
             align-items: center;
             min-width: 50px;
-        }
-
-        .date-display {
-            position: absolute;
-            bottom: -40px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            font-size: 14px;
-            white-space: nowrap;
-            font-weight: 500;
         }
 
         .info-panel {
@@ -157,18 +138,8 @@
                 </div>
             </div>
 
-            <div class="separator">:</div>
-
-            <div class="flip-card" id="seconds">
-                <div class="flip-card-inner">
-                    <div class="flip-card-front" id="seconds-front">00</div>
-                    <div class="flip-card-back" id="seconds-back">00</div>
-                </div>
-            </div>
-
             <div class="period" id="period">AM</div>
         </div>
-        <div class="date-display" id="date-display"></div>
     </div>
 
     <div class="info-panel">
@@ -178,19 +149,15 @@
     <script>
         const hoursCard = document.getElementById('hours');
         const minutesCard = document.getElementById('minutes');
-        const secondsCard = document.getElementById('seconds');
         const periodDisplay = document.getElementById('period');
-        const dateDisplay = document.getElementById('date-display');
 
         let lastHours = null;
         let lastMinutes = null;
-        let lastSeconds = null;
 
         function updateClock() {
             const now = new Date();
             let hours = now.getHours();
             const minutes = now.getMinutes();
-            const seconds = now.getSeconds();
 
             // Format for 12-hour clock
             const period = hours >= 12 ? 'PM' : 'AM';
@@ -198,7 +165,6 @@
 
             const hoursStr = String(hours).padStart(2, '0');
             const minutesStr = String(minutes).padStart(2, '0');
-            const secondsStr = String(seconds).padStart(2, '0');
 
             // Update hours
             if (hoursStr !== lastHours) {
@@ -216,20 +182,8 @@
                 lastMinutes = minutesStr;
             }
 
-            // Update seconds
-            if (secondsStr !== lastSeconds) {
-                flipCard(secondsCard, lastSeconds, secondsStr, 'seconds');
-                document.getElementById('seconds-front').textContent = secondsStr;
-                document.getElementById('seconds-back').textContent = secondsStr;
-                lastSeconds = secondsStr;
-            }
-
             // Update period
             periodDisplay.textContent = period;
-
-            // Update date
-            const dateOptions = { weekday: 'short', month: 'short', day: 'numeric' };
-            dateDisplay.textContent = now.toLocaleDateString('en-US', dateOptions);
         }
 
         function flipCard(card, oldValue, newValue, type) {
