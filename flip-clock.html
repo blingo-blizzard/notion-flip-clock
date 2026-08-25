@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flip Clock Widget</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+        }
+
+        .clock-container {
+            perspective: 1000px;
+            padding: 40px;
+        }
+
+        .clock {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.3));
+        }
+
+        .flip-card {
+            width: 100px;
+            height: 120px;
+            position: relative;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .flip-card-inner.flipping {
+            animation: flip 0.6s ease-in-out;
+        }
+
+        @keyframes flip {
+            0% {
+                transform: rotateX(0deg);
+            }
+            50% {
+                transform: rotateX(90deg);
+            }
+            100% {
+                transform: rotateX(0deg);
+            }
+        }
+
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            font-weight: bold;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .flip-card-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: rotateY(0deg);
+        }
+
+        .flip-card-back {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .separator {
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            animation: blink 1s infinite;
+            height: 20px;
+        }
+
+        @keyframes blink {
+            0%, 49%, 100% {
+                opacity: 1;
+            }
+            50%, 99% {
+                opacity: 0.3;
+            }
+        }
+
+        .period {
+            font-size: 24px;
+            color: white;
+            font-weight: bold;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            min-width: 50px;
+        }
+
+        .date-display {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 14px;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .info-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: white;
+            font-size: 12px;
+            text-align: right;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="clock-container">
+        <div class="clock">
+            <div class="flip-card" id="hours">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front" id="hours-front">00</div>
+                    <div class="flip-card-back" id="hours-back">00</div>
+                </div>
+            </div>
+
+            <div class="separator">:</div>
+
+            <div class="flip-card" id="minutes">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front" id="minutes-front">00</div>
+                    <div class="flip-card-back" id="minutes-back">00</div>
+                </div>
+            </div>
+
+            <div class="separator">:</div>
+
+            <div class="flip-card" id="seconds">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front" id="seconds-front">00</div>
+                    <div class="flip-card-back" id="seconds-back">00</div>
+                </div>
+            </div>
+
+            <div class="period" id="period">AM</div>
+        </div>
+        <div class="date-display" id="date-display"></div>
+    </div>
+
+    <div class="info-panel">
+        <div>Notion Flip Clock</div>
+    </div>
+
+    <script>
+        const hoursCard = document.getElementById('hours');
+        const minutesCard = document.getElementById('minutes');
+        const secondsCard = document.getElementById('seconds');
+        const periodDisplay = document.getElementById('period');
+        const dateDisplay = document.getElementById('date-display');
+
+        let lastHours = null;
+        let lastMinutes = null;
+        let lastSeconds = null;
+
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+
+            // Format for 12-hour clock
+            const period = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+
+            const hoursStr = String(hours).padStart(2, '0');
+            const minutesStr = String(minutes).padStart(2, '0');
+            const secondsStr = String(seconds).padStart(2, '0');
+
+            // Update hours
+            if (hoursStr !== lastHours) {
+                flipCard(hoursCard, lastHours, hoursStr, 'hours');
+                document.getElementById('hours-front').textContent = hoursStr;
+                document.getElementById('hours-back').textContent = hoursStr;
+                lastHours = hoursStr;
+            }
+
+            // Update minutes
+            if (minutesStr !== lastMinutes) {
+                flipCard(minutesCard, lastMinutes, minutesStr, 'minutes');
+                document.getElementById('minutes-front').textContent = minutesStr;
+                document.getElementById('minutes-back').textContent = minutesStr;
+                lastMinutes = minutesStr;
+            }
+
+            // Update seconds
+            if (secondsStr !== lastSeconds) {
+                flipCard(secondsCard, lastSeconds, secondsStr, 'seconds');
+                document.getElementById('seconds-front').textContent = secondsStr;
+                document.getElementById('seconds-back').textContent = secondsStr;
+                lastSeconds = secondsStr;
+            }
+
+            // Update period
+            periodDisplay.textContent = period;
+
+            // Update date
+            const dateOptions = { weekday: 'short', month: 'short', day: 'numeric' };
+            dateDisplay.textContent = now.toLocaleDateString('en-US', dateOptions);
+        }
+
+        function flipCard(card, oldValue, newValue, type) {
+            const inner = card.querySelector('.flip-card-inner');
+            if (oldValue !== null) {
+                inner.classList.add('flipping');
+                setTimeout(() => {
+                    inner.classList.remove('flipping');
+                }, 600);
+            }
+        }
+
+        // Initial update
+        updateClock();
+
+        // Update every 100ms for smooth animation detection
+        setInterval(updateClock, 100);
+    </script>
+</body>
+</html>
