@@ -1,1 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Retro Flip Clock (Notion Widget)</title>
+  <style>
+    :root{
+      --bg: rgb(25,25,25);
+      --face: #C68726;
+      --digit: #0b1a20;
+      --accent-line: rgba(255,255,255,0.12);
+      --seam-offset: 10px; /* how far top moves down and bottom moves up */
+    }
 
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: "Helvetica Neue", Inter, Arial, sans-serif;
+      background:var(--bg);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      box-sizing:border-box;
+    }
+
+    .widget {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;
+      padding:20px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.55);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
+      width: min(520px, 92vw);
+    }
+
+    .clock-row {
+      display:flex;
+      gap:18px;
+      align-items:center;
+    }
+
+    .flip-card {
+      width: 170px;
+      height: 116px;
+      background:var(--face);
+      border-radius:12px;
+      position:relative;
+      overflow:visible;
+      box-shadow: inset 0 -6px 12px rgba(0,0,0,0.12), 0 6px 12px rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.06);
+      perspective: 900px;
+      -webkit-perspective: 900px;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .half {
+      height:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      position:relative;
+    }
+
+    /* center the digit absolutely so clipping shows halves; use seam offset to nudge halves */
+    .digit {
+      font-weight:800;
+      font-size:56px;
+      color:var(--digit);
+      letter-spacing:1px;
+      line-height:1;
+      transform: translateZ(0);
+      user-select:none;
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform-origin:50% 50%;
+      width: 200%;
+      text-align:center;
+    }
+
+    /* clip the digit to show only top or bottom half and nudge toward the seam */
+    .top-digit {
+      clip-path: inset(0 0 50% 0);
+      transform: translate(-50%, calc(-50% + var(--seam-offset)));
+    }
+    .bottom-digit {
+      clip-path: inset(50% 0 0 0);
+      transform: translate(-50%, calc(-50% - var(--seam-offset)));
+    }
+
+    /* Divider line across center */
+    .flip-card::after{
+      content:"";
+      position:absolute;
+      left:10px;
+      right:10px;
+      top:50%;
+      height:1px;
+      background: var(--accent-line);
+      transform: translateY(-0.5px);
+      pointer-events:none;
+    }
+
+    /* Flap elements used for animation (they also use clipping) */
+    .flap {
+      position:absolute;
+      left:0;
+      right:0;
+      height:50%;
+      background:var(--face);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      box-shadow: inset 0 -6px 12px rgba(0,0,0,0.08);
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.03);
+      overflow:hidden;
+    }
+
+    .flap.top {
+      top:0;
+      transform-origin: center bottom;
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+      z-index: 5;
+    }
+
+    .flap.bottom {
+      bottom:0;
+      transform-origin: center top;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      z-index: 3;
+      transform: rotateX(90deg); /* hidden initially when used as animated flap */
+    }
+
+    /* animation classes */
+    .flip-animate-top {
+      animation: flipTop 400ms cubic-bezier(.2,.9,.3,1) forwards;
+    }
+    .flip-animate-bottom {
+      animation: flipBottom 400ms cubic-bezier(.2,.9,.3,1) forwards;
+    }
+
+    @keyframes flipTop {
+      0%   { transform: rotateX(0deg); }
+      100% { transform: rotateX(-90deg); }
+    }
+
+    @keyframes flipBottom {
+      0%   { transform: rotateX(90deg); }
+      100% { transform: rotateX(0deg); }
+    }
+
+    .flip-card .half:first-child{
+      border-top-left-radius:10px;
+      border-top-right-radius:10px;
+    }
+    .flip-card .half:last-child{
+      border-bottom-left-radius:10px;
+      border-bottom-right-radius:10px;
+    }
+
+    .date {
+      color: #e6e6e6;
+      font-size:14px;
+      opacity:0.95;
+      letter-spacing:0.2px;
+      margin-top:4px;
+      text-align:center;
+    }
+
+    @media (max-width:420px){
+      .flip-card { width: 130px; height: 92px; }
+      .digit { font-size:42px; }
+      .clock-row { gap:12px; }
+      .widget { padding:14px; }
+      :root { --seam-offset: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="widget" role="application" aria-label="Retro flip clock widget">
+    <div class="clock-row" id="clock">
+      <div class="flip-card" data-type="hour" aria-label="Hours">
+        <div class="half top-half" aria-hidden="true">
+          <!-- top-digit now clipped to show only the top half of the glyph and nudged down toward seam -->
+          <div class="digit top-digit">--</div>
+        </div>
+        <div class="half bottom-half" aria-hidden="true">
+          <!-- bottom-digit clipped to show only the bottom half and nudged up toward seam -->
+          <div class="digit bottom-digit">--</div>
+        </div>
+      </div>
+
+      <div class="flip-card" data-type="minute" aria-label="Minutes">
+        <div class="half top-half" aria-hidden="true">
+          <div class="digit top-digit">--</div>
+        </div>
+        <div class="half bottom-half" aria-hidden="true">
+          <div class="digit bottom-digit">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="date" id="date">Loading date…</div>
+  </div>
+
+  <script>
+    // Utility: pad to 2 digits
+    function pad(n){ return (n < 10 ? "0" : "") + n; }
+
+    // Get elements
+    const cards = {
+      hour: document.querySelector('.flip-card[data-type="hour"]'),
+      minute: document.querySelector('.flip-card[data-type="minute"]')
+    };
+
+    // Track previous values
+    let previous = {hour: null, minute: null};
+
+    // update the visible halves (initial render or after animation)
+    function setCardValue(cardEl, value) {
+      // Both halves hold the same numeric string but clipped visually.
+      cardEl.querySelector('.top-digit').textContent = value;
+      cardEl.querySelector('.bottom-digit').textContent = value;
+    }
+
+    // Create flip animation sequence for a card
+    function animateCardFlip(cardEl, oldVal, newVal) {
+      if (oldVal === newVal) return Promise.resolve();
+
+      return new Promise((resolve) => {
+        // Top flap (shows top half of OLD value) flips down
+        const topFlap = document.createElement('div');
+        topFlap.className = 'flap top';
+        topFlap.innerHTML = '<div class="digit top-digit">'+oldVal+'</div>';
+        cardEl.appendChild(topFlap);
+
+        // Bottom flap (shows bottom half of NEW value) will rotate up
+        const bottomFlap = document.createElement('div');
+        bottomFlap.className = 'flap bottom';
+        bottomFlap.style.transform = 'rotateX(90deg)'; // start hidden
+        bottomFlap.innerHTML = '<div class="digit bottom-digit">'+newVal+'</div>';
+        cardEl.appendChild(bottomFlap);
+
+        // Force reflow then start top animation
+        topFlap.getBoundingClientRect();
+        topFlap.classList.add('flip-animate-top');
+
+        topFlap.addEventListener('animationend', () => {
+          // Remove top flap and update top half to new value
+          topFlap.remove();
+          cardEl.querySelector('.top-digit').textContent = newVal;
+
+          // animate bottom flap up
+          bottomFlap.classList.add('flip-animate-bottom');
+
+          bottomFlap.addEventListener('animationend', () => {
+            // done: remove flap and update bottom half to new value
+            bottomFlap.remove();
+            cardEl.querySelector('.bottom-digit').textContent = newVal;
+            resolve();
+          }, {once:true});
+        }, {once:true});
+      });
+    }
+
+    // Main update loop
+    function updateClock(initial=false){
+      const now = new Date();
+      const h = pad(now.getHours()); // 24-hour format
+      const m = pad(now.getMinutes());
+
+      // Update date text
+      const dateEl = document.getElementById('date');
+      const opts = { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' };
+      dateEl.textContent = now.toLocaleDateString(undefined, opts);
+
+      // Hours
+      if (initial) {
+        setCardValue(cards.hour, h);
+        previous.hour = h;
+      } else if (previous.hour !== h){
+        animateCardFlip(cards.hour, previous.hour, h).then(()=> {
+          previous.hour = h;
+        });
+      }
+
+      // Minutes
+      if (initial) {
+        setCardValue(cards.minute, m);
+        previous.minute = m;
+      } else if (previous.minute !== m){
+        animateCardFlip(cards.minute, previous.minute, m).then(() => {
+          previous.minute = m;
+        });
+      }
+    }
+
+    // Initialize
+    updateClock(true);
+
+    // Run update every second to detect minute/hour changes and keep date synced.
+    setInterval(updateClock, 1000);
+
+    // Preserve 3D style for crisp flips
+    document.querySelectorAll('.flip-card').forEach(c => {
+      c.style.transformStyle = 'preserve-3d';
+      c.style.webkitTransformStyle = 'preserve-3d';
+    });
+  </script>
+</body>
+</html>
